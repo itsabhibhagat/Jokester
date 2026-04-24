@@ -1,0 +1,446 @@
+{
+  "info": {
+    "_postman_id": "ceb7e661-bd21-4aba-b437-2553b6e85fb3",
+    "name": "Jokester API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35960393",
+    "_collection_link": "https://go.postman.co/collection/35960393-ceb7e661-bd21-4aba-b437-2553b6e85fb3?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth Test",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Response status code is 201\", function () {\r",
+                  "    pm.expect(pm.response.code).to.eql(201);\r",
+                  "});\r",
+                  "\r",
+                  "\r",
+                  "pm.test(\"Response has required fields: token and username\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "\r",
+                  "    pm.expect(responseData).to.be.an('object');\r",
+                  "    pm.expect(responseData).to.have.all.keys('token', 'username');\r",
+                  "});\r",
+                  "\r",
+                  "\r",
+                  "pm.test(\"Token is a non-empty string\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.have.property('token').that.is.a('string').and.is.not.empty;\r",
+                  "});\r",
+                  "\r",
+                  "\r",
+                  "pm.test(\"Username must be a non-empty string\", function () {\r",
+                  "    const responseData = pm.response.json();\r",
+                  "    \r",
+                  "    pm.expect(responseData).to.be.an('object');\r",
+                  "    pm.expect(responseData.username).to.exist.and.to.be.a('string').and.to.have.lengthOf.at.least(1, \"Username should not be empty\");\r",
+                  "});\r",
+                  "\r",
+                  "\r",
+                  "pm.test(\"Response time is less than 200ms\", function () {\r",
+                  "    pm.expect(pm.response.responseTime).to.be.below(200);\r",
+                  "});\r",
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"testuser\",\r\n  \"email\": \"test@example.com\",\r\n  \"password\": \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"testuser\",\r\n  \"password\": \"password123\"\r\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Joke Test",
+      "item": [
+        {
+          "name": "Post Joke (auth)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhYmhpIiwiaWF0IjoxNzc2OTQ2OTg5LCJleHAiOjE3NzcwMzMzODl9.Sn69VPUsCBvNFvBCuiiZBWESPOaNn6L94CsOjIviJfz40KuOXVdQ-aHW82QExviy",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Why did the chicken cross the road?\",\r\n  \"content\": \"To get to the other side!\",\r\n  \"categoryId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/post",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "post"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Joke by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/ccad843f-9962-45d7-af03-4ab061ebc3b9",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "ccad843f-9962-45d7-af03-4ab061ebc3b9"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search All Jokes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search with Query",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes?query=chicken&page=0&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "chicken"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search by category",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Joke",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/delete/ccad843f-9962-45d7-af03-4ab061ebc3b9",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "delete",
+                "ccad843f-9962-45d7-af03-4ab061ebc3b9"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vote Test",
+      "item": [
+        {
+          "name": "UpVote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJiaGFnYXQiLCJpYXQiOjE3NzcwMDkwNDYsImV4cCI6MTc3NzA5NTQ0Nn0.gTHoWmdexzCXoWbGGp8PfIOFl-zbKUCQ1-VH0Y3cYHjZA1bJneIGVBkzAcrPMrbM",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c/vote?type=UP",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c",
+                "vote"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "UP"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DownVote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJiaGFnYXQiLCJpYXQiOjE3NzcwMDkwNDYsImV4cCI6MTc3NzA5NTQ0Nn0.gTHoWmdexzCXoWbGGp8PfIOFl-zbKUCQ1-VH0Y3cYHjZA1bJneIGVBkzAcrPMrbM",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c/vote?type=DOWN",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c",
+                "vote"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "DOWN"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Random Jokes",
+      "item": [
+        {
+          "name": "List Providers",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "Random Joke",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/random",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "random"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "JokeAPI Specific Provider",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/random/jokeApi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "random",
+                "jokeApi"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ChuckNorris Specific Provider",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/random/ChuckNorris",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "random",
+                "ChuckNorris"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "jokeId",
+      "value": ""
+    }
+  ]
+}
