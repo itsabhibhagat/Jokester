@@ -1,0 +1,86 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jokester
+
+  datasource:
+    # ─── Primary (Master) — handles all WRITES ───────────
+    primary:
+      url: jdbc:postgresql://postgres-primary:5432/jokester_db
+      username: postgres
+      password: FAmi12@#
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 10
+        minimum-idle: 3
+        pool-name: PrimaryPool
+
+    # ─── Replica (Slave) — handles all READS ────────────
+    replica:
+      url: jdbc:postgresql://postgres-primary:5432/jokester_db  # different port
+      username: postgres
+      password: FAmi12@#
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        maximum-pool-size: 20   # more connections — reads are more frequent
+        minimum-idle: 5
+        pool-name: ReplicaPool
+#    hikari:
+#      maximum-pool-size: 20
+#      minimum-idle: 5
+#      connection-timeout: 30000
+#      idle-timeout: 600000
+#      max-lifetime: 1800000
+#      leak-detection-threshold: 60000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # ✅ Redis config stays under spring.data (correct)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 1000ms
+
+  # ✅ Cache config must be at spring.cache level (NOT spring.data.cache)
+  cache:
+    type: redis
+
+jwt:
+  secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  expiration: 86400000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.application.jokester: INFO
+    # ✅ Shows "Cache hit" / "Cache miss" in logs so you can verify caching works
+    org.springframework.cache: DEBUG

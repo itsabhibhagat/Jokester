@@ -1,0 +1,112 @@
+package com.application.jokester.vote.service.impl;
+
+import com.application.jokester.auth.entity.User;
+import com.application.jokester.joke.dto.JokeResponse;
+import com.application.jokester.joke.entity.Joke;
+import com.application.jokester.joke.repository.JokeRepository;
+import com.application.jokester.vote.entity.*;
+import com.application.jokester.vote.repository.VoteRepository;
+import com.application.jokester.vote.service.VoteService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class VoteServiceImpl implements VoteService {
+
+    private final VoteRepository voteRepository;
+    private final JokeRepository jokeRepository;
+
+    @Override
+    @CacheEvict(value = "joke", key = "#jokeId", beforeInvocation = true)
+    public JokeResponse vote(UUID jokeId, VoteType voteType, User currentUser) {
+
+        Joke joke = jokeRepository.findByIdWithDetails(jokeId)
+                .orElseThrow(() -> new RuntimeException("Joke not found: " + jokeId));
+
+        Optional<Vote> existingVote =
+                voteRepository.findByUserIdAndJokeId(currentUser.getId(), jokeId);
+
+        if (existingVote.isPresent()) {
+            Vote vote = existingVote.get();
+
+            if (vote.getVoteType() == voteType) {
+                // 🔁 TOGGLE OFF
+                log.info("Toggling off {} vote for joke {}", voteType, jokeId);
+                undoVoteAtomic(jokeId, voteType);
+                voteRepository.delete(vote);
+
+            } else {
+                // 🔄 SWITCH VOTE
+                log.info("Switching vote from {} to {}", vote.getVoteType(), voteType);
+                switchVoteAtomic(jokeId, vote.getVoteType(), voteType);
+                vote.setVoteType(voteType);
+                voteRepository.save(vote);
+            }
+
+        } else {
+            // ➕ NEW VOTE
+            log.info("New {} vote for joke {}", voteType, jokeId);
+            applyVoteAtomic(jokeId, voteType);
+
+            Vote newVote = Vote.builder()
+                    .id(new VoteId(currentUser.getId(), jokeId))
+                    .user(currentUser)
+                    .joke(joke)
+                    .voteType(voteType)
+                    .build();
+
+            voteRepository.save(newVote);
+        }
+
+        // 🔥 Always fetch fresh data (now works due to clearAutomatically)
+        Joke updatedJoke = jokeRepository.findById(jokeId)
+                .orElseThrow(() -> new RuntimeException("Joke not found"));
+
+        return toResponse(updatedJoke);
+    }
+
+    // ─── Atomic operations ─────────────────────────
+
+    private void applyVoteAtomic(UUID jokeId, VoteType type) {
+        if (type == VoteType.UP) {
+            jokeRepository.incrementUpvotes(jokeId);
+        } else {
+            jokeRepository.incrementDownvotes(jokeId);
+        }
+    }
+
+    private void undoVoteAtomic(UUID jokeId, VoteType type) {
+        if (type == VoteType.UP) {
+            jokeRepository.decrementUpvotes(jokeId);
+        } else {
+            jokeRepository.decrementDownvotes(jokeId);
+        }
+    }
+
+    private void switchVoteAtomic(UUID jokeId, VoteType from, VoteType to) {
+        undoVoteAtomic(jokeId, from);
+        applyVoteAtomic(jokeId, to);
+    }
+
+    private JokeResponse toResponse(Joke joke) {
+        return JokeResponse.builder()
+                .id(joke.getId())
+                .title(joke.getTitle())
+                .content(joke.getContent())
+                .category(joke.getCategory().getName())
+                .postedBy(joke.getUser().getUsername())
+                .upvotes(joke.getUpvotes())
+                .downvotes(joke.getDownvotes())
+                .createdAt(joke.getCreated_at())
+                .build();
+    }
+}
