@@ -1,7 +1,6 @@
 package com.application.jokester.joke.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,12 +8,12 @@ import lombok.Setter;
 @Setter
 public class CreateJokeRequest {
 
-    @NotBlank
+    @NotBlank(message = "Title is required")
     private String title;
 
-    @NotBlank
+    @NotBlank(message = "Content is required")
     private String content;
 
-    @NotNull
-    private Integer categoryId;
+    @NotBlank(message = "Category name is required")
+    private String categoryName;
 }

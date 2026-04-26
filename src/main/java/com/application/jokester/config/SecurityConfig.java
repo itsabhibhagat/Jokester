@@ -1,11 +1,6 @@
 package com.application.jokester.config;
 
-import com.application.jokester.auth.entity.User;
-import com.application.jokester.auth.repository.UserRepository;
-import com.application.jokester.auth.security.UserPrincipal;
-import com.application.jokester.exception.UserNameNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,8 +12,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -37,8 +30,18 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // Auth endpoints are public
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
+                        // All GET requests on jokes are public
                         .requestMatchers(HttpMethod.GET, "/api/jokes/**").permitAll()
+                        // Swagger UI paths must be public
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+                        // Everything else requires a valid JWT token
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->

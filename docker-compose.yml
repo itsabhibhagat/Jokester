@@ -1,64 +1,77 @@
+# Docker Compose file for running the complete Jokester application stack.
+# This starts three containers: the Spring Boot app, PostgreSQL, and Redis.
+#
+# Commands:
+#   First time or after code changes:  docker compose up --build
+#   Subsequent runs (no code changes): docker compose up
+#   Stop all containers:               docker compose down
+#   Stop and delete all saved data:    docker compose down -v
+#   View application logs:             docker compose logs -f app
+#
+# After startup, access the app at:
+#   API:     http://localhost:8080/api
+#   Swagger: http://localhost:8080/swagger-ui.html
+#   Health:  http://localhost:8080/actuator/health
+
+version: '3.8'
+
 services:
 
-  # ─── PRIMARY DB (WRITE) ───────────────────────────────
-  postgres-primary:
-    image: postgres:16
-    container_name: jokester-postgres-primary
+  postgres:
+    # Official PostgreSQL 16 image using Alpine Linux for a smaller image size.
+    image: postgres:16-alpine
+    container_name: jokester-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: jokester_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: FAmi12@#
     ports:
+      # Exposes PostgreSQL on port 5432 so you can connect from your local machine using pgAdmin.
       - "5432:5432"
     volumes:
-      - primary_data:/var/lib/postgresql/data
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: >
-      postgres
-      -c wal_level=replica
-      -c max_wal_senders=10
-      -c wal_keep_size=64
+      # Named volume ensures database data persists even when the container is stopped or removed.
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # Checks if PostgreSQL is ready to accept connections before the app container starts.
+      # The app will not start until this check passes, preventing connection errors on startup.
+      test: ["CMD-SHELL", "pg_isready -U postgres -d jokester_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     networks:
       - jokester-network
 
-  # ─── REPLICA DB (READ) ────────────────────────────────
-  postgres-replica:
-    image: postgres:16
-    container_name: jokester-postgres-replica
-    restart: unless-stopped
-    depends_on:
-      - postgres-primary
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: FAmi12@#
-    ports:
-      - "5433:5432"
-    volumes:
-      - replica_data:/var/lib/postgresql/data
-    command: >
-      bash -c "
-      sleep 5 &&
-      pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U postgres -Fp -Xs -P -R &&
-      postgres
-      "
-    networks:
-      - jokester-network
-
-  # ─── REDIS ────────────────────────────────────────────
   redis:
-    image: redis:7
+    # Official Redis 7 image using Alpine Linux for a smaller image size.
+    image: redis:7-alpine
     container_name: jokester-redis
     restart: unless-stopped
     ports:
+      # Exposes Redis on port 6379 so you can inspect the cache from your local machine using redis-cli.
       - "6379:6379"
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      # Saves cached data to disk so the cache survives container restarts.
+      - redis_data:/data
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    # maxmemory limits Redis to 256MB RAM.
+    # allkeys-lru means when Redis is full, it removes the least recently used keys automatically.
+    healthcheck:
+      # Sends a PING command to Redis and expects PONG back to confirm it is running.
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     networks:
       - jokester-network
 
-  # ─── SPRING BOOT APP ──────────────────────────────────
   app:
     build:
+      # Docker will look for the Dockerfile in the current directory and build the JAR.
       context: .
       dockerfile: Dockerfile
     container_name: jokester-app
@@ -66,34 +79,35 @@ services:
     ports:
       - "8080:8080"
     environment:
-
-      # 🔥 IMPORTANT: use container names, NOT localhost
-
-      SPRING_DATASOURCE_PRIMARY_URL: jdbc:postgresql://postgres-primary:5432/jokester_db
-      SPRING_DATASOURCE_PRIMARY_USERNAME: postgres
-      SPRING_DATASOURCE_PRIMARY_PASSWORD: FAmi12@#
-
-      SPRING_DATASOURCE_REPLICA_URL: jdbc:postgresql://postgres-replica:5432/jokester_db
-      SPRING_DATASOURCE_REPLICA_USERNAME: postgres
-      SPRING_DATASOURCE_REPLICA_PASSWORD: FAmi12@#
-
+      # These environment variables override the values in application.yaml at runtime.
+      # Inside Docker, containers communicate using service names not localhost.
+      # So "postgres" resolves to the postgres container and "redis" to the redis container.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/jokester_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: FAmi12@#
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
       JWT_EXPIRATION: 86400000
-
     depends_on:
-      - postgres-primary
-      - postgres-replica
-      - redis
+      postgres:
+        # App container will not start until PostgreSQL passes its health check.
+        condition: service_healthy
+      redis:
+        # App container will not start until Redis passes its health check.
+        condition: service_healthy
     networks:
       - jokester-network
 
 volumes:
-  primary_data:
-  replica_data:
+  # postgres_data stores all database tables and rows permanently on your machine.
+  postgres_data:
+  # redis_data stores the cache so it survives restarts without losing warm cache entries.
+  redis_data:
 
 networks:
   jokester-network:
+    # Bridge network creates a private internal network for the three containers.
+    # Containers on this network can reach each other by service name.
+    # Containers are isolated from the outside world except for the ports we explicitly expose.
     driver: bridge

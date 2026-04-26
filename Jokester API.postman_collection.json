@@ -137,13 +137,13 @@
               },
               {
                 "key": "Authorization",
-                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJhYmhpIiwiaWF0IjoxNzc2OTQ2OTg5LCJleHAiOjE3NzcwMzMzODl9.Sn69VPUsCBvNFvBCuiiZBWESPOaNn6L94CsOjIviJfz40KuOXVdQ-aHW82QExviy",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc3NzE5MTE3MCwiZXhwIjoxNzc3Mjc3NTcwfQ.od2Wn-UHuwM3qauHF_ewAZxcSErvBbgbTQrKEUsLNIohfMoZPO6C454v3LBIMK1y",
                 "type": "text"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Why did the chicken cross the road?\",\r\n  \"content\": \"To get to the other side!\",\r\n  \"categoryId\": 1\r\n}",
+              "raw": "{\r\n  \"title\": \"Why don't programmers like nature?\",\r\n  \"content\": \"Because it has too many bugs.\",\r\n  \"categoryName\": \"Programming Jokes\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -170,14 +170,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/jokes/ccad843f-9962-45d7-af03-4ab061ebc3b9",
+              "raw": "{{baseUrl}}/api/jokes/65652cab-f1e7-43f3-b12c-74143def8515",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "jokes",
-                "ccad843f-9962-45d7-af03-4ab061ebc3b9"
+                "65652cab-f1e7-43f3-b12c-74143def8515"
               ]
             }
           },
@@ -207,7 +207,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/jokes?query=chicken&page=0&size=10",
+              "raw": "{{baseUrl}}/api/jokes?page=0&size=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -218,7 +218,8 @@
               "query": [
                 {
                   "key": "query",
-                  "value": "chicken"
+                  "value": "",
+                  "disabled": true
                 },
                 {
                   "key": "page",
@@ -237,7 +238,19 @@
           "name": "Search by category",
           "request": {
             "method": "GET",
-            "header": []
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/category/Programming Jokes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "category",
+                "Programming Jokes"
+              ]
+            }
           },
           "response": []
         },
@@ -245,9 +258,15 @@
           "name": "Delete Joke",
           "request": {
             "method": "DELETE",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc3NzE0MDIyMywiZXhwIjoxNzc3MjI2NjIzfQ.VsIhXAmtZfhYuPHphHiCjtw1_gpG415v5jStvvrciOvuE5KzgnW_foYi9Bf4rDTJ",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/jokes/delete/ccad843f-9962-45d7-af03-4ab061ebc3b9",
+              "raw": "{{baseUrl}}/api/jokes/delete/53322706-d7b0-42f6-9683-5a7c12377dec",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -255,7 +274,27 @@
                 "api",
                 "jokes",
                 "delete",
-                "ccad843f-9962-45d7-af03-4ab061ebc3b9"
+                "53322706-d7b0-42f6-9683-5a7c12377dec"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search by Username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/user/testUser",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "user",
+                "testUser"
               ]
             }
           },
@@ -273,19 +312,19 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJiaGFnYXQiLCJpYXQiOjE3NzcwMDkwNDYsImV4cCI6MTc3NzA5NTQ0Nn0.gTHoWmdexzCXoWbGGp8PfIOFl-zbKUCQ1-VH0Y3cYHjZA1bJneIGVBkzAcrPMrbM",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc3NzE5MTE3MCwiZXhwIjoxNzc3Mjc3NTcwfQ.od2Wn-UHuwM3qauHF_ewAZxcSErvBbgbTQrKEUsLNIohfMoZPO6C454v3LBIMK1y",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/jokes/24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c/vote?type=UP",
+              "raw": "{{baseUrl}}/api/jokes/9a3b1b67-2f8e-4c07-aa0f-4bddbaac409b/vote?type=UP",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "jokes",
-                "24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c",
+                "9a3b1b67-2f8e-4c07-aa0f-4bddbaac409b",
                 "vote"
               ],
               "query": [
@@ -305,19 +344,19 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJiaGFnYXQiLCJpYXQiOjE3NzcwMDkwNDYsImV4cCI6MTc3NzA5NTQ0Nn0.gTHoWmdexzCXoWbGGp8PfIOFl-zbKUCQ1-VH0Y3cYHjZA1bJneIGVBkzAcrPMrbM",
+                "value": "Bearer eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJ0ZXN0dXNlciIsImlhdCI6MTc3NzE5MTE3MCwiZXhwIjoxNzc3Mjc3NTcwfQ.od2Wn-UHuwM3qauHF_ewAZxcSErvBbgbTQrKEUsLNIohfMoZPO6C454v3LBIMK1y",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/jokes/24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c/vote?type=DOWN",
+              "raw": "{{baseUrl}}/api/jokes/65652cab-f1e7-43f3-b12c-74143def8515/vote?type=DOWN",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "jokes",
-                "24ab88a4-f7fd-467c-8f3c-6dcecdb2cc0c",
+                "65652cab-f1e7-43f3-b12c-74143def8515",
                 "vote"
               ],
               "query": [
@@ -339,7 +378,19 @@
           "name": "List Providers",
           "request": {
             "method": "GET",
-            "header": []
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/jokes/random/providers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jokes",
+                "random",
+                "providers"
+              ]
+            }
           },
           "response": []
         },

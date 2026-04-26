@@ -4,7 +4,9 @@ import com.application.jokester.auth.entity.User;
 import com.application.jokester.joke.dto.JokeResponse;
 import com.application.jokester.joke.entity.Joke;
 import com.application.jokester.joke.repository.JokeRepository;
-import com.application.jokester.vote.entity.*;
+import com.application.jokester.vote.entity.Vote;
+import com.application.jokester.vote.entity.VoteId;
+import com.application.jokester.vote.entity.VoteType;
 import com.application.jokester.vote.repository.VoteRepository;
 import com.application.jokester.vote.service.VoteService;
 import jakarta.transaction.Transactional;
@@ -29,6 +31,7 @@ public class VoteServiceImpl implements VoteService {
     @CacheEvict(value = "joke", key = "#jokeId", beforeInvocation = true)
     public JokeResponse vote(UUID jokeId, VoteType voteType, User currentUser) {
 
+        //Fetch joke with JOIN FETCH — loads user + category in one query
         Joke joke = jokeRepository.findByIdWithDetails(jokeId)
                 .orElseThrow(() -> new RuntimeException("Joke not found: " + jokeId));
 
@@ -39,57 +42,50 @@ public class VoteServiceImpl implements VoteService {
             Vote vote = existingVote.get();
 
             if (vote.getVoteType() == voteType) {
-                // 🔁 TOGGLE OFF
+                //Same vote clicked again → TOGGLE OFF
+                // Example: already upvoted → click upvote again → remove upvote
                 log.info("Toggling off {} vote for joke {}", voteType, jokeId);
                 undoVoteAtomic(jokeId, voteType);
                 voteRepository.delete(vote);
 
             } else {
-                // 🔄 SWITCH VOTE
-                log.info("Switching vote from {} to {}", vote.getVoteType(), voteType);
+                //Different vote clicked → SWITCH
+                // Example: upvoted → click downvote → upvotes--, downvotes++
+                log.info("Switching vote from {} to {} for joke {}", vote.getVoteType(), voteType, jokeId);
                 switchVoteAtomic(jokeId, vote.getVoteType(), voteType);
                 vote.setVoteType(voteType);
                 voteRepository.save(vote);
             }
 
         } else {
-            // ➕ NEW VOTE
+            // ➕ No existing vote → NEW VOTE
             log.info("New {} vote for joke {}", voteType, jokeId);
             applyVoteAtomic(jokeId, voteType);
 
             Vote newVote = Vote.builder()
                     .id(new VoteId(currentUser.getId(), jokeId))
                     .user(currentUser)
-                    .joke(joke)
+                    .joke(joke)  //reuse already fetched joke
                     .voteType(voteType)
                     .build();
 
             voteRepository.save(newVote);
         }
 
-        // 🔥 Always fetch fresh data (now works due to clearAutomatically)
-        Joke updatedJoke = jokeRepository.findById(jokeId)
+        //Fixed: use findByIdWithDetails — avoids lazy load of user/category
+        Joke updatedJoke = jokeRepository.findByIdWithDetails(jokeId)
                 .orElseThrow(() -> new RuntimeException("Joke not found"));
-
         return toResponse(updatedJoke);
     }
 
-    // ─── Atomic operations ─────────────────────────
-
     private void applyVoteAtomic(UUID jokeId, VoteType type) {
-        if (type == VoteType.UP) {
-            jokeRepository.incrementUpvotes(jokeId);
-        } else {
-            jokeRepository.incrementDownvotes(jokeId);
-        }
+        if (type == VoteType.UP) jokeRepository.incrementUpvotes(jokeId);
+        else jokeRepository.incrementDownvotes(jokeId);
     }
 
     private void undoVoteAtomic(UUID jokeId, VoteType type) {
-        if (type == VoteType.UP) {
-            jokeRepository.decrementUpvotes(jokeId);
-        } else {
-            jokeRepository.decrementDownvotes(jokeId);
-        }
+        if (type == VoteType.UP) jokeRepository.decrementUpvotes(jokeId);
+        else jokeRepository.decrementDownvotes(jokeId);
     }
 
     private void switchVoteAtomic(UUID jokeId, VoteType from, VoteType to) {
@@ -109,4 +105,7 @@ public class VoteServiceImpl implements VoteService {
                 .createdAt(joke.getCreated_at())
                 .build();
     }
+
+//    @Override public void applyVote(Joke joke, VoteType type) {}
+//    @Override public void undoVote(Joke joke, VoteType type) {}
 }

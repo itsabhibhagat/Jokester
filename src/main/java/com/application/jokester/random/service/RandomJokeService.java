@@ -15,7 +15,6 @@ public class RandomJokeService {
 
     private final List<JokeProvider> providers;
 
-    // ✅ Cache by provider name
     // key = "jokeApi"  → cached separately
     // key = "ChuckNorris" → cached separately
     // Same provider = same key = cache hits correctly
@@ -28,7 +27,6 @@ public class RandomJokeService {
                 .fetchJoke();
     }
 
-    // ✅ Fixed: static key 'any-random' — same key every call = cache works
     // First call: 500ms (hits external API), stored in Redis
     // Every call after: 1-2ms (from Redis, for 1 hour)
     @Cacheable(value = "random-jokes", key = "'any-random'")

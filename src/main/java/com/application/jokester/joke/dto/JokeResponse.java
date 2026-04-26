@@ -7,9 +7,6 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// ✅ Fix 1: implements Serializable — required for Redis to store this object
-// ✅ Fix 2: @NoArgsConstructor — required for Jackson to deserialize from Redis
-// ✅ Fix 3: @AllArgsConstructor — required for @Builder to work with no-args constructor
 @Getter
 @Setter
 @Builder

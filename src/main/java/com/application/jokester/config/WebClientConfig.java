@@ -19,7 +19,7 @@ public class WebClientConfig {
     @Bean
     public WebClient webClient() {
 
-        // ✅ Connection pool — reuse existing TCP connections
+        // Connection pool — reuse existing TCP connections
         // Without this: new TCP handshake every request = +200ms
         // With this: reuse warm connections = near 0ms overhead
         ConnectionProvider connectionProvider = ConnectionProvider.builder("jokester-pool")
@@ -29,7 +29,7 @@ public class WebClientConfig {
                 .pendingAcquireTimeout(Duration.ofSeconds(10))
                 .build();
 
-        // ✅ Timeouts — never hang forever on slow external APIs
+        // Timeouts — never hang forever on slow external APIs
         // connectTimeout: max time to establish TCP connection
         // responseTimeout: max time waiting for first byte of response
         HttpClient httpClient = HttpClient.create(connectionProvider)
