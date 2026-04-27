@@ -27,15 +27,9 @@ public class RedisConfig {
 
         ObjectMapper objectMapper = new ObjectMapper();
 
-        // Handle LocalDateTime
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-        // THE KEY FIX — embed @class type info in JSON
-        // Without this: Redis stores { "id": "...", "title": "..." }
-        //   → on read: Jackson sees plain JSON → deserializes as LinkedHashMap → ClassCastException
-        // With this:  Redis stores { "@class": "com.application.jokester.joke.dto.JokeResponse", "id": "...", ... }
-        //   → on read: Jackson sees @class → deserializes as JokeResponse correctly
         PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator
                 .builder()
                 .allowIfBaseType(Object.class)
