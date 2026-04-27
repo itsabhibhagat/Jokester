@@ -1,6 +1,7 @@
 package com.application.jokester.vote.service.impl;
 
 import com.application.jokester.auth.entity.User;
+import com.application.jokester.exception.ResourceNotFoundException;
 import com.application.jokester.joke.dto.JokeResponse;
 import com.application.jokester.joke.entity.Joke;
 import com.application.jokester.joke.repository.JokeRepository;
@@ -32,7 +33,8 @@ public class VoteServiceImpl implements VoteService {
     public JokeResponse vote(UUID jokeId, VoteType voteType, User currentUser) {
 
         Joke joke = jokeRepository.findByIdWithDetails(jokeId)
-                .orElseThrow(() -> new RuntimeException("Joke not found: " + jokeId));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Joke not found with id: " + jokeId));
 
         Optional<Vote> existingVote =
                 voteRepository.findByUserIdAndJokeId(currentUser.getId(), jokeId);
@@ -44,7 +46,6 @@ public class VoteServiceImpl implements VoteService {
                 log.info("Toggling off {} vote for joke {}", voteType, jokeId);
                 undoVoteAtomic(jokeId, voteType);
                 voteRepository.delete(vote);
-
             } else {
                 log.info("Switching vote from {} to {} for joke {}", vote.getVoteType(), voteType, jokeId);
                 switchVoteAtomic(jokeId, vote.getVoteType(), voteType);
@@ -59,16 +60,19 @@ public class VoteServiceImpl implements VoteService {
             Vote newVote = Vote.builder()
                     .id(new VoteId(currentUser.getId(), jokeId))
                     .user(currentUser)
-                    .joke(joke)  //reuse already fetched joke
+                    .joke(joke)
                     .voteType(voteType)
                     .build();
 
             voteRepository.save(newVote);
         }
 
-        Joke updatedJoke = jokeRepository.findByIdWithDetails(jokeId)
-                .orElseThrow(() -> new RuntimeException("Joke not found"));
-        return toResponse(updatedJoke);
+        // Fetch updated joke with fresh vote counts after the operation.
+        // Throws ResourceNotFoundException if joke was deleted between operations.
+        return jokeRepository.findByIdWithDetails(jokeId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Joke not found after voting with id: " + jokeId));
     }
 
     private void applyVoteAtomic(UUID jokeId, VoteType type) {
@@ -98,5 +102,4 @@ public class VoteServiceImpl implements VoteService {
                 .createdAt(joke.getCreated_at())
                 .build();
     }
-
 }

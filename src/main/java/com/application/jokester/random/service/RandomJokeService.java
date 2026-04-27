@@ -1,5 +1,6 @@
 package com.application.jokester.random.service;
 
+import com.application.jokester.exception.ResourceNotFoundException;
 import com.application.jokester.random.dto.RandomJokeResponse;
 import com.application.jokester.random.provider.JokeProvider;
 import lombok.RequiredArgsConstructor;
@@ -15,27 +16,26 @@ public class RandomJokeService {
 
     private final List<JokeProvider> providers;
 
-    // key = "jokeApi"  → cached separately
-    // key = "ChuckNorris" → cached separately
-    // Same provider = same key = cache hits correctly
 //    @Cacheable(value = "random-jokes", key = "#providerName")
     public RandomJokeResponse fromProvider(String providerName) {
         return providers.stream()
                 .filter(p -> p.getProviderName().equalsIgnoreCase(providerName))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("Provider not found: " + providerName))
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Joke provider not found: '" + providerName +
+                                "'. Available providers: " + getAvailableProviders()))
                 .fetchJoke();
     }
 
-    // First call: 500ms (hits external API), stored in Redis
-    // Every call after: 1-2ms (from Redis, for 1 hour)
+    // Fetches a joke from a randomly selected provider.
 //    @Cacheable(value = "random-jokes", key = "'any-random'")
     public RandomJokeResponse fromRandomProvider() {
         int index = new Random().nextInt(providers.size());
         return providers.get(index).fetchJoke();
     }
 
-    // No caching needed — just returns provider names, no external call
+    // Returns the names of all currently available providers.
+    // No caching needed since this just reads from the in-memory list.
     public List<String> getAvailableProviders() {
         return providers.stream()
                 .map(JokeProvider::getProviderName)
