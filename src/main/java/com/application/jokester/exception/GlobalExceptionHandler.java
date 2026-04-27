@@ -11,15 +11,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
-// This class handles all exceptions thrown anywhere in the application.
-// Without this, Spring would return raw error pages or ugly stack traces.
-// Now every error — validation failures, runtime errors, missing data —
-// returns a clean JSON response in our standard ApiResponse format.
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Handles validation errors from @Valid on request bodies.
-    // For example if title is blank, this returns which field failed and why.
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationErrors(
             MethodArgumentNotValidException ex) {
@@ -33,7 +27,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Validation failed"));
     }
 
-    // Handles all other runtime errors like "Joke not found" or "Username already exists".
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException ex) {
         return ResponseEntity
@@ -41,7 +34,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
-    // Handles any other unexpected exception that we did not predict.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
         return ResponseEntity

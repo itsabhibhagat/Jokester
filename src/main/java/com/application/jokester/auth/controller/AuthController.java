@@ -21,10 +21,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // Registers a new user account.
-    // The username and email must both be unique in the system.
-    // The password is stored as a BCrypt hash — never in plain text.
-    // On success, a JWT token is returned so the user can start making requests immediately.
     @Operation(
             summary = "Register a new user",
             description = "Creates a new user account. Username and email must be unique. Returns a JWT token on success."
@@ -39,10 +35,6 @@ public class AuthController {
                 .body(ApiResponse.success("Account created successfully", response));
     }
 
-    // Logs in an existing user by verifying their username and password.
-    // Spring Security handles the actual password verification against the BCrypt hash.
-    // On success, a new JWT token is returned which the client must include
-    // in the Authorization header of all subsequent protected requests.
     @Operation(
             summary = "Login",
             description = "Authenticates an existing user. Returns a JWT token that must be included as 'Bearer <token>' in the Authorization header for protected endpoints."

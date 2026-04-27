@@ -24,13 +24,6 @@ public class VoteController {
 
     private final VoteService voteService;
 
-    // Allows a logged-in user to cast a vote on a joke.
-    // Voting has three behaviors depending on the user's current vote status:
-    // 1. If the user has not voted yet, the vote is added.
-    // 2. If the user votes the same way again, the vote is removed (toggle off).
-    // 3. If the user switches from upvote to downvote or vice versa, the old vote is
-    //    removed and the new one is applied — ensuring only one vote type exists per user.
-    // This enforces the rule that a user can either upvote OR downvote, never both.
     @Operation(
             summary = "Vote on a joke",
             description = "Cast a vote on a joke. Voting the same type again removes the vote. Switching vote type updates it. A user can only have one active vote per joke. Requires authentication.",

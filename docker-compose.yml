@@ -1,4 +1,3 @@
-# Docker Compose file for running the complete Jokester application stack.
 # This starts three containers: the Spring Boot app, PostgreSQL, and Redis.
 #
 # Commands:

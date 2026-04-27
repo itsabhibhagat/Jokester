@@ -31,7 +31,6 @@ public class VoteServiceImpl implements VoteService {
     @CacheEvict(value = "joke", key = "#jokeId", beforeInvocation = true)
     public JokeResponse vote(UUID jokeId, VoteType voteType, User currentUser) {
 
-        //Fetch joke with JOIN FETCH — loads user + category in one query
         Joke joke = jokeRepository.findByIdWithDetails(jokeId)
                 .orElseThrow(() -> new RuntimeException("Joke not found: " + jokeId));
 
@@ -42,15 +41,11 @@ public class VoteServiceImpl implements VoteService {
             Vote vote = existingVote.get();
 
             if (vote.getVoteType() == voteType) {
-                //Same vote clicked again → TOGGLE OFF
-                // Example: already upvoted → click upvote again → remove upvote
                 log.info("Toggling off {} vote for joke {}", voteType, jokeId);
                 undoVoteAtomic(jokeId, voteType);
                 voteRepository.delete(vote);
 
             } else {
-                //Different vote clicked → SWITCH
-                // Example: upvoted → click downvote → upvotes--, downvotes++
                 log.info("Switching vote from {} to {} for joke {}", vote.getVoteType(), voteType, jokeId);
                 switchVoteAtomic(jokeId, vote.getVoteType(), voteType);
                 vote.setVoteType(voteType);
@@ -58,7 +53,6 @@ public class VoteServiceImpl implements VoteService {
             }
 
         } else {
-            // ➕ No existing vote → NEW VOTE
             log.info("New {} vote for joke {}", voteType, jokeId);
             applyVoteAtomic(jokeId, voteType);
 
@@ -72,7 +66,6 @@ public class VoteServiceImpl implements VoteService {
             voteRepository.save(newVote);
         }
 
-        //Fixed: use findByIdWithDetails — avoids lazy load of user/category
         Joke updatedJoke = jokeRepository.findByIdWithDetails(jokeId)
                 .orElseThrow(() -> new RuntimeException("Joke not found"));
         return toResponse(updatedJoke);
@@ -106,6 +99,4 @@ public class VoteServiceImpl implements VoteService {
                 .build();
     }
 
-//    @Override public void applyVote(Joke joke, VoteType type) {}
-//    @Override public void undoVote(Joke joke, VoteType type) {}
 }
