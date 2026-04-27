@@ -18,7 +18,7 @@ public class RandomJokeService {
     // key = "jokeApi"  → cached separately
     // key = "ChuckNorris" → cached separately
     // Same provider = same key = cache hits correctly
-    @Cacheable(value = "random-jokes", key = "#providerName")
+//    @Cacheable(value = "random-jokes", key = "#providerName")
     public RandomJokeResponse fromProvider(String providerName) {
         return providers.stream()
                 .filter(p -> p.getProviderName().equalsIgnoreCase(providerName))
@@ -29,7 +29,7 @@ public class RandomJokeService {
 
     // First call: 500ms (hits external API), stored in Redis
     // Every call after: 1-2ms (from Redis, for 1 hour)
-    @Cacheable(value = "random-jokes", key = "'any-random'")
+//    @Cacheable(value = "random-jokes", key = "'any-random'")
     public RandomJokeResponse fromRandomProvider() {
         int index = new Random().nextInt(providers.size());
         return providers.get(index).fetchJoke();
