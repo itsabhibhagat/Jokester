@@ -16,7 +16,10 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-      leak-detection-threshold: 60000
+      # Increased from 60000 to 120000 (2 minutes).
+      # This stops false leak warnings during heavy queries on local machine.
+      # On production with proper indexes queries never take this long anyway.
+      leak-detection-threshold: 120000
       pool-name: JokesterPool
 
   jpa:

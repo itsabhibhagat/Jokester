@@ -6,12 +6,6 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-// This is a standard response wrapper used across all API endpoints.
-// Every API response will be wrapped in this structure so the client
-// always gets a consistent JSON format regardless of the endpoint.
-// The data field holds the actual result — it can be any type.
-// The message field explains what happened in plain English.
-// The timestamp tells the client when exactly this response was generated.
 @Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
