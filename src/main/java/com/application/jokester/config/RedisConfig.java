@@ -62,7 +62,7 @@ public class RedisConfig {
 
         cacheConfigs.put("random-jokes",
                 RedisCacheConfiguration.defaultCacheConfig()
-                        .entryTtl(Duration.ofHours(1))
+                        .entryTtl(Duration.ofSeconds(30))
                         .disableCachingNullValues()
                         .serializeValuesWith(serializationPair));
 

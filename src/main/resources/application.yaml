@@ -1,5 +1,12 @@
 server:
   port: 8080
+  # Enable HTTP response compression for all JSON responses.
+  # Compresses responses larger than 1KB reducing network transfer by 60-80%.
+  # This reduces time from server to client significantly on slow networks.
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: application/json,application/xml,text/html
 
 spring:
   application:
@@ -16,9 +23,6 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-      # Increased from 60000 to 120000 (2 minutes).
-      # This stops false leak warnings during heavy queries on local machine.
-      # On production with proper indexes queries never take this long anyway.
       leak-detection-threshold: 120000
       pool-name: JokesterPool
 
@@ -29,7 +33,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
+        format_sql: false
+        # Batch inserts and updates — groups multiple operations into one DB roundtrip.
+        # Reduces DB calls significantly during bulk operations.
+        jdbc.batch_size: 20
+        order_inserts: true
+        order_updates: true
 
   flyway:
     enabled: true
@@ -42,6 +51,9 @@ spring:
       port: ${REDIS_PORT}
       timeout: 2000ms
       lettuce:
+        # pool must be under lettuce, not directly under redis.
+        # Without this the pool configuration is silently ignored
+        # and Lettuce creates a new connection for every Redis operation.
         pool:
           max-active: 20
           max-idle: 10
@@ -67,4 +79,5 @@ management:
 logging:
   level:
     com.application.jokester: INFO
-    org.springframework.cache: DEBUG
+    # Change cache logging to INFO in production — DEBUG generates too many log entries
+    org.springframework.cache: INFO

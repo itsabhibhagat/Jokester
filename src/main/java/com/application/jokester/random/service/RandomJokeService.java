@@ -16,7 +16,7 @@ public class RandomJokeService {
 
     private final List<JokeProvider> providers;
 
-//    @Cacheable(value = "random-jokes", key = "#providerName")
+    @Cacheable(value = "random-jokes", key = "#providerName")
     public RandomJokeResponse fromProvider(String providerName) {
         return providers.stream()
                 .filter(p -> p.getProviderName().equalsIgnoreCase(providerName))
@@ -27,15 +27,12 @@ public class RandomJokeService {
                 .fetchJoke();
     }
 
-    // Fetches a joke from a randomly selected provider.
-//    @Cacheable(value = "random-jokes", key = "'any-random'")
+    @Cacheable(value = "random-jokes", key = "'any-random'")
     public RandomJokeResponse fromRandomProvider() {
         int index = new Random().nextInt(providers.size());
         return providers.get(index).fetchJoke();
     }
 
-    // Returns the names of all currently available providers.
-    // No caching needed since this just reads from the in-memory list.
     public List<String> getAvailableProviders() {
         return providers.stream()
                 .map(JokeProvider::getProviderName)

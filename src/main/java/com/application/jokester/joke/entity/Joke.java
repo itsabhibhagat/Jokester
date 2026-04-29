@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "jokes")
 @Getter
 @Setter
-@Table(name = "jokes")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,7 +26,7 @@ public class Joke {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
@@ -43,6 +43,6 @@ public class Joke {
     private int downvotes;
 
     @CreationTimestamp
+    @Column(name = "created_at")
     private LocalDateTime created_at;
-
 }

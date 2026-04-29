@@ -41,7 +41,6 @@ public class VoteServiceImpl implements VoteService {
 
         if (existingVote.isPresent()) {
             Vote vote = existingVote.get();
-
             if (vote.getVoteType() == voteType) {
                 log.info("Toggling off {} vote for joke {}", voteType, jokeId);
                 undoVoteAtomic(jokeId, voteType);
@@ -52,27 +51,38 @@ public class VoteServiceImpl implements VoteService {
                 vote.setVoteType(voteType);
                 voteRepository.save(vote);
             }
-
         } else {
             log.info("New {} vote for joke {}", voteType, jokeId);
             applyVoteAtomic(jokeId, voteType);
-
-            Vote newVote = Vote.builder()
+            voteRepository.save(Vote.builder()
                     .id(new VoteId(currentUser.getId(), jokeId))
                     .user(currentUser)
                     .joke(joke)
                     .voteType(voteType)
-                    .build();
-
-            voteRepository.save(newVote);
+                    .build());
         }
 
-        // Fetch updated joke with fresh vote counts after the operation.
-        // Throws ResourceNotFoundException if joke was deleted between operations.
-        return jokeRepository.findByIdWithDetails(jokeId)
-                .map(this::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Joke not found after voting with id: " + jokeId));
+        if (voteType == VoteType.UP) {
+            if (existingVote.isPresent() && existingVote.get().getVoteType() == VoteType.UP) {
+                joke.setUpvotes(joke.getUpvotes() - 1);
+            } else if (existingVote.isPresent()) {
+                joke.setUpvotes(joke.getUpvotes() + 1);
+                joke.setDownvotes(joke.getDownvotes() - 1);
+            } else {
+                joke.setUpvotes(joke.getUpvotes() + 1);
+            }
+        } else {
+            if (existingVote.isPresent() && existingVote.get().getVoteType() == VoteType.DOWN) {
+                joke.setDownvotes(joke.getDownvotes() - 1);
+            } else if (existingVote.isPresent()) {
+                joke.setDownvotes(joke.getDownvotes() + 1);
+                joke.setUpvotes(joke.getUpvotes() - 1);
+            } else {
+                joke.setDownvotes(joke.getDownvotes() + 1);
+            }
+        }
+
+        return toResponse(joke);
     }
 
     private void applyVoteAtomic(UUID jokeId, VoteType type) {
