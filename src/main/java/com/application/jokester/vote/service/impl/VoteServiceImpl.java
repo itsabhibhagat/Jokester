@@ -1,6 +1,7 @@
 package com.application.jokester.vote.service.impl;
 
 import com.application.jokester.auth.entity.User;
+import com.application.jokester.auth.repository.UserRepository;
 import com.application.jokester.exception.ResourceNotFoundException;
 import com.application.jokester.joke.dto.JokeResponse;
 import com.application.jokester.joke.entity.Joke;
@@ -12,14 +13,11 @@ import com.application.jokester.vote.repository.VoteRepository;
 import com.application.jokester.vote.service.VoteService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 import java.util.UUID;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -27,62 +25,44 @@ public class VoteServiceImpl implements VoteService {
 
     private final VoteRepository voteRepository;
     private final JokeRepository jokeRepository;
+    private final UserRepository userRepository;
 
     @Override
     @CacheEvict(value = "joke", key = "#jokeId", beforeInvocation = true)
-    public JokeResponse vote(UUID jokeId, VoteType voteType, User currentUser) {
-
+    public JokeResponse vote(UUID jokeId, VoteType voteType, UUID userId) {
         Joke joke = jokeRepository.findByIdWithDetails(jokeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Joke not found with id: " + jokeId));
+                        "Joke not found: " + jokeId));
 
-        Optional<Vote> existingVote =
-                voteRepository.findByUserIdAndJokeId(currentUser.getId(), jokeId);
+        voteRepository.findByUserIdAndJokeId(userId, jokeId)
+                .ifPresentOrElse(
+                        existing -> {
+                            if (existing.getVoteType() == voteType) {
+                                undoVoteAtomic(jokeId, voteType);
+                                voteRepository.delete(existing);
+                            } else {
+                                switchVoteAtomic(jokeId, existing.getVoteType(), voteType);
+                                existing.setVoteType(voteType);
+                                voteRepository.save(existing);
+                            }
+                        },
+                        () -> {
+                            applyVoteAtomic(jokeId, voteType);
+                            // getReferenceById avoids a full SELECT — loads a proxy reference only
+                            User userRef = userRepository.getReferenceById(userId);
+                            voteRepository.save(Vote.builder()
+                                    .id(new VoteId(userId, jokeId))
+                                    .user(userRef)
+                                    .joke(joke)
+                                    .voteType(voteType)
+                                    .build());
+                        }
+                );
 
-        if (existingVote.isPresent()) {
-            Vote vote = existingVote.get();
-            if (vote.getVoteType() == voteType) {
-                log.info("Toggling off {} vote for joke {}", voteType, jokeId);
-                undoVoteAtomic(jokeId, voteType);
-                voteRepository.delete(vote);
-            } else {
-                log.info("Switching vote from {} to {} for joke {}", vote.getVoteType(), voteType, jokeId);
-                switchVoteAtomic(jokeId, vote.getVoteType(), voteType);
-                vote.setVoteType(voteType);
-                voteRepository.save(vote);
-            }
-        } else {
-            log.info("New {} vote for joke {}", voteType, jokeId);
-            applyVoteAtomic(jokeId, voteType);
-            voteRepository.save(Vote.builder()
-                    .id(new VoteId(currentUser.getId(), jokeId))
-                    .user(currentUser)
-                    .joke(joke)
-                    .voteType(voteType)
-                    .build());
-        }
-
-        if (voteType == VoteType.UP) {
-            if (existingVote.isPresent() && existingVote.get().getVoteType() == VoteType.UP) {
-                joke.setUpvotes(joke.getUpvotes() - 1);
-            } else if (existingVote.isPresent()) {
-                joke.setUpvotes(joke.getUpvotes() + 1);
-                joke.setDownvotes(joke.getDownvotes() - 1);
-            } else {
-                joke.setUpvotes(joke.getUpvotes() + 1);
-            }
-        } else {
-            if (existingVote.isPresent() && existingVote.get().getVoteType() == VoteType.DOWN) {
-                joke.setDownvotes(joke.getDownvotes() - 1);
-            } else if (existingVote.isPresent()) {
-                joke.setDownvotes(joke.getDownvotes() + 1);
-                joke.setUpvotes(joke.getUpvotes() - 1);
-            } else {
-                joke.setDownvotes(joke.getDownvotes() + 1);
-            }
-        }
-
-        return toResponse(joke);
+        return jokeRepository.findByIdWithDetails(jokeId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Joke not found: " + jokeId));
     }
 
     private void applyVoteAtomic(UUID jokeId, VoteType type) {

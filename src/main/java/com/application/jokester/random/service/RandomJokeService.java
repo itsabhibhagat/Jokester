@@ -16,26 +16,25 @@ public class RandomJokeService {
 
     private final List<JokeProvider> providers;
 
+    // Single Random instance reused across calls — not created new each time.
+    private static final Random RANDOM = new Random();
+
     @Cacheable(value = "random-jokes", key = "#providerName")
     public RandomJokeResponse fromProvider(String providerName) {
         return providers.stream()
                 .filter(p -> p.getProviderName().equalsIgnoreCase(providerName))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Joke provider not found: '" + providerName +
-                                "'. Available providers: " + getAvailableProviders()))
+                        "Provider not found: " + providerName))
                 .fetchJoke();
     }
 
     @Cacheable(value = "random-jokes", key = "'any-random'")
     public RandomJokeResponse fromRandomProvider() {
-        int index = new Random().nextInt(providers.size());
-        return providers.get(index).fetchJoke();
+        return providers.get(RANDOM.nextInt(providers.size())).fetchJoke();
     }
 
     public List<String> getAvailableProviders() {
-        return providers.stream()
-                .map(JokeProvider::getProviderName)
-                .toList();
+        return providers.stream().map(JokeProvider::getProviderName).toList();
     }
 }

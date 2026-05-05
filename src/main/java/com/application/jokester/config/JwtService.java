@@ -5,11 +5,11 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -29,9 +29,10 @@ public class JwtService {
         return signingKey;
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String username, UUID userId) {
         return Jwts.builder()
                 .subject(username)
+                .claim("userId", userId.toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
@@ -50,12 +51,14 @@ public class JwtService {
         return extractAllClaims(token).getSubject();
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
+    public UUID extractUserId(String token) {
+        return UUID.fromString(extractAllClaims(token).get("userId", String.class));
+    }
+
+    public boolean isTokenValid(String token) {
         try {
             Claims claims = extractAllClaims(token);
-            String username = claims.getSubject();
-            boolean notExpired = !claims.getExpiration().before(new Date());
-            return username.equals(userDetails.getUsername()) && notExpired;
+            return !claims.getExpiration().before(new Date());
         } catch (Exception e) {
             return false;
         }

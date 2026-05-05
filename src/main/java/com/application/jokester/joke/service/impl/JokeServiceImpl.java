@@ -1,11 +1,13 @@
 package com.application.jokester.joke.service.impl;
 
 import com.application.jokester.auth.entity.User;
+import com.application.jokester.auth.repository.UserRepository;
 import com.application.jokester.category.entity.Category;
 import com.application.jokester.category.repository.CategoryRepository;
 import com.application.jokester.exception.ResourceNotFoundException;
 import com.application.jokester.exception.UnauthorizedActionException;
 import com.application.jokester.joke.dto.CreateJokeRequest;
+import com.application.jokester.joke.dto.JokePageResponse;
 import com.application.jokester.joke.dto.JokeResponse;
 import com.application.jokester.joke.entity.Joke;
 import com.application.jokester.joke.repository.JokeRepository;
@@ -15,10 +17,10 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -27,20 +29,20 @@ public class JokeServiceImpl implements JokeService {
 
     private final JokeRepository jokeRepository;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
-    public JokeResponse createJoke(CreateJokeRequest request, User currentUser) {
-        String trimmedCategoryName = request.getCategoryName().trim();
-
+    public JokeResponse createJoke(CreateJokeRequest request, UUID userId) {
         Category category = categoryRepository
-                .findByName(trimmedCategoryName)
-                .orElseGet(() -> categoryRepository.save(
-                        Category.builder().name(trimmedCategoryName).build()
-                ));
+                .findByName(request.getCategoryName().trim())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Category '" + request.getCategoryName() + "' does not exist."));
+
+        User userRef = userRepository.getReferenceById(userId);
 
         Joke joke = Joke.builder()
-                .user(currentUser)
+                .user(userRef)
                 .category(category)
                 .title(request.getTitle().trim())
                 .content(request.getContent().trim())
@@ -50,7 +52,6 @@ public class JokeServiceImpl implements JokeService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     @Cacheable(value = "joke", key = "#id")
     public JokeResponse getJokeById(UUID id) {
         return jokeRepository.findByIdWithDetails(id)
@@ -60,43 +61,55 @@ public class JokeServiceImpl implements JokeService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Page<JokeResponse> searchJokes(String query, String categoryName, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public JokePageResponse searchJokes(String query, String categoryName,
+                                        Integer lastUpvotes, UUID lastId, int size) {
         String normalizedQuery = (query != null && query.isBlank()) ? null : query;
         String normalizedCategory = (categoryName != null && categoryName.isBlank()) ? null : categoryName;
-        return jokeRepository
-                .searchJokesOptimized(normalizedQuery, normalizedCategory, pageable)
-                .map(this::toResponse);
+        String lastIdStr = (lastId != null) ? lastId.toString() : null;
+
+        // Fetch one extra record so we can determine if there are more pages.
+        List<Joke> jokes = jokeRepository.searchJokesKeyset(
+                normalizedQuery, normalizedCategory, lastUpvotes, lastIdStr, size + 1);
+
+        boolean hasMore = jokes.size() > size;
+        List<Joke> page = hasMore ? jokes.subList(0, size) : jokes;
+        List<JokeResponse> responses = page.stream().map(this::toResponse).toList();
+
+        Integer nextUpvotes = hasMore ? page.get(page.size() - 1).getUpvotes() : null;
+        UUID nextId = hasMore ? page.get(page.size() - 1).getId() : null;
+
+        return JokePageResponse.builder()
+                .jokes(responses)
+                .size(responses.size())
+                .hasMore(hasMore)
+                .lastUpvotes(nextUpvotes)
+                .lastId(nextId)
+                .build();
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<JokeResponse> getJokesByCategory(String categoryName, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
         return jokeRepository
-                .findByCategoryName(categoryName, pageable)
+                .findByCategoryName(categoryName, PageRequest.of(page, size))
                 .map(this::toResponse);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<JokeResponse> getJokesByUsername(String username, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
         return jokeRepository
-                .findByUsername(username, pageable)
+                .findByUsername(username, PageRequest.of(page, size))
                 .map(this::toResponse);
     }
 
     @Override
     @Transactional
     @CacheEvict(value = "joke", key = "#id")
-    public void deleteJoke(UUID id, User currentUser) {
+    public void deleteJoke(UUID id, UUID userId) {
         Joke joke = jokeRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Joke not found with id: " + id));
 
-        if (!joke.getUser().getId().equals(currentUser.getId())) {
+        if (!joke.getUser().getId().equals(userId)) {
             throw new UnauthorizedActionException(
                     "You are not authorized to delete this joke");
         }
@@ -104,8 +117,6 @@ public class JokeServiceImpl implements JokeService {
         jokeRepository.delete(joke);
     }
 
-    // Converts a Joke database entity to a JokeResponse DTO.
-    // DTO contains only what the client needs — no internal IDs or foreign keys.
     private JokeResponse toResponse(Joke joke) {
         return JokeResponse.builder()
                 .id(joke.getId())

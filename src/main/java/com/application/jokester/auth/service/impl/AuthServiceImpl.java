@@ -46,9 +46,8 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         userRepository.save(user);
-
         return new AuthResponse(
-                jwtService.generateToken(user.getUsername()),
+                jwtService.generateToken(user.getUsername(), user.getId()),
                 user.getUsername()
         );
     }
@@ -70,8 +69,9 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with username: " + request.getUsername()));
 
+        // login method
         return new AuthResponse(
-                jwtService.generateToken(user.getUsername()),
+                jwtService.generateToken(user.getUsername(), user.getId()),
                 user.getUsername()
         );
     }
