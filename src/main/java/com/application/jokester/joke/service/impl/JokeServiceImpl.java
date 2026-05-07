@@ -4,6 +4,7 @@ import com.application.jokester.auth.entity.User;
 import com.application.jokester.auth.repository.UserRepository;
 import com.application.jokester.category.entity.Category;
 import com.application.jokester.category.repository.CategoryRepository;
+import com.application.jokester.comment.repository.CommentRepository;
 import com.application.jokester.exception.ResourceNotFoundException;
 import com.application.jokester.exception.UnauthorizedActionException;
 import com.application.jokester.joke.dto.CreateJokeRequest;
@@ -30,6 +31,7 @@ public class JokeServiceImpl implements JokeService {
     private final JokeRepository jokeRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
 
     @Override
     @Transactional
@@ -126,6 +128,7 @@ public class JokeServiceImpl implements JokeService {
                 .postedBy(joke.getUser().getUsername())
                 .upvotes(joke.getUpvotes())
                 .downvotes(joke.getDownvotes())
+                .commentCount(commentRepository.countByJokeId(joke.getId()))
                 .createdAt(joke.getCreated_at())
                 .build();
     }

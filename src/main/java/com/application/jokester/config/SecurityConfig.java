@@ -30,18 +30,16 @@ public class SecurityConfig {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Auth endpoints are public
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
-                        // All GET requests on jokes are public
                         .requestMatchers(HttpMethod.GET, "/api/jokes/**").permitAll()
-                        // Swagger UI paths must be public
+                        // Reading comments is public — no login needed
+                        .requestMatchers(HttpMethod.GET, "/api/jokes/*/comments").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        // Everything else requires a valid JWT token
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
