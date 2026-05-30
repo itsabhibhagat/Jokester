@@ -31,8 +31,6 @@ public class CommentServiceImpl implements CommentService {
     private final JokeRepository jokeRepository;
     private final UserRepository userRepository;
 
-    // Adds a top-level comment to a joke.
-    // Any authenticated user can comment on any joke — including their own.
     @Override
     @Transactional
     public CommentResponse addComment(UUID jokeId, CreateCommentRequest request, UUID userId) {
@@ -50,9 +48,6 @@ public class CommentServiceImpl implements CommentService {
         return toResponse(commentRepository.save(comment), false);
     }
 
-    // Retrieves all top-level comments for a joke ordered by most liked first.
-    // Each top-level comment includes its replies ordered by creation time.
-    // This is a public endpoint — no authentication needed.
     @Override
     public List<CommentResponse> getCommentsByJoke(UUID jokeId) {
         if (!jokeRepository.existsById(jokeId)) {
@@ -72,9 +67,6 @@ public class CommentServiceImpl implements CommentService {
         }).toList();
     }
 
-    // Adds a reply to an existing top-level comment.
-    // We only allow replying to top-level comments — not to replies themselves.
-    // This keeps the thread structure simple and avoids infinite nesting.
     @Override
     @Transactional
     public CommentResponse replyToComment(UUID parentCommentId, CreateCommentRequest request, UUID userId) {
@@ -97,12 +89,6 @@ public class CommentServiceImpl implements CommentService {
         return toResponse(commentRepository.save(reply), true);
     }
 
-    // Deletes a comment permanently.
-    // Two types of users can delete a comment:
-    //   1. The comment author — can always delete their own comment
-    //   2. The joke owner — can delete any comment on their joke (moderator role)
-    // When a top-level comment is deleted, all its replies are deleted automatically
-    // by the ON DELETE CASCADE constraint in the database.
     @Override
     @Transactional
     public void deleteComment(UUID commentId, UUID requesterId) {
@@ -120,10 +106,6 @@ public class CommentServiceImpl implements CommentService {
         commentRepository.delete(comment);
     }
 
-    // Toggles a like on a comment.
-    // If the user has not liked the comment — adds a like and increments the count.
-    // If the user already liked the comment — removes the like and decrements the count.
-    // The likes_count column is updated atomically to prevent race conditions.
     @Override
     @Transactional
     public CommentResponse likeComment(UUID commentId, UUID userId) {

@@ -45,9 +45,6 @@ public class JokeController {
                 ApiResponse.success("Joke fetched successfully", jokeService.getJokeById(id)));
     }
 
-    // Keyset pagination — use lastUpvotes and lastId from previous response to get next page.
-    // First call: no lastUpvotes or lastId needed.
-    // Next call: pass lastUpvotes and lastId from the previous response.
     @Operation(summary = "Search jokes with keyset pagination")
     @GetMapping
     public ResponseEntity<ApiResponse<JokePageResponse>> searchJokes(

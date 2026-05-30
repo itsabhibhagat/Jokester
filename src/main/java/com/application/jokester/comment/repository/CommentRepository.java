@@ -12,9 +12,6 @@ import java.util.UUID;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
-    // Loads top-level comments for a joke with their author in one query.
-    // Only fetches comments where parent is NULL — replies are loaded separately.
-    // Ordered by most liked first so the best comments surface to the top.
     @Query("""
         SELECT c FROM Comment c
         JOIN FETCH c.user
@@ -24,8 +21,6 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     """)
     List<Comment> findTopLevelByJokeId(@Param("jokeId") UUID jokeId);
 
-    // Loads all replies for a given parent comment with their authors.
-    // Replies are ordered by creation time ascending so the conversation flows naturally.
     @Query("""
         SELECT c FROM Comment c
         JOIN FETCH c.user
@@ -34,8 +29,6 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     """)
     List<Comment> findRepliesByParentId(@Param("parentId") UUID parentId);
 
-    // Loads a comment with its joke and the joke's owner for permission checking.
-    // Used in delete to verify whether the requester is the comment author or joke owner.
     @Query("""
         SELECT c FROM Comment c
         JOIN FETCH c.user
@@ -45,17 +38,14 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     """)
     Optional<Comment> findByIdWithJokeOwner(@Param("id") UUID id);
 
-    // Atomic increment of likes_count — avoids race conditions when multiple users like simultaneously.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Comment c SET c.likesCount = c.likesCount + 1 WHERE c.id = :commentId")
     void incrementLikes(@Param("commentId") UUID commentId);
 
-    // Atomic decrement — called when a user unlikes a comment.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Comment c SET c.likesCount = c.likesCount - 1 WHERE c.id = :commentId")
     void decrementLikes(@Param("commentId") UUID commentId);
 
-    // Counts total comments on a joke — used in JokeResponse to show comment count.
     @Query("SELECT COUNT(c) FROM Comment c WHERE c.joke.id = :jokeId")
     int countByJokeId(@Param("jokeId") UUID jokeId);
 }

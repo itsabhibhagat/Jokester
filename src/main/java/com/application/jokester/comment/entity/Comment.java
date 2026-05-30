@@ -35,19 +35,14 @@ public class Comment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    // Null for top-level comments, set for replies.
-    // We only allow one level of replies — you cannot reply to a reply.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_comment_id")
     private Comment parent;
 
-    // Replies are loaded explicitly when needed — not eagerly loaded.
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Comment> replies = new ArrayList<>();
 
-    // Maintained atomically via @Modifying queries.
-    // Avoids COUNT(comment_likes) on every fetch which would be slow at scale.
     @Column(name = "likes_count", nullable = false)
     @Builder.Default
     private int likesCount = 0;

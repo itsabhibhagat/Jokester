@@ -25,8 +25,6 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    // Adds a new top-level comment to a joke.
-    // Any authenticated user can comment on any joke.
     @Operation(
             summary = "Add a comment to a joke",
             description = "Posts a top-level comment on a joke. Requires authentication.",
@@ -43,10 +41,6 @@ public class CommentController {
                         commentService.addComment(jokeId, request, principal.userId())));
     }
 
-    // Returns all top-level comments for a joke with their replies included.
-    // Comments are sorted by most liked first.
-    // Replies within each comment are sorted by oldest first.
-    // This is a public endpoint — no authentication required.
     @Operation(
             summary = "Get comments for a joke",
             description = "Returns all comments for a joke ordered by most liked. Each comment includes its replies ordered by oldest first."
@@ -60,9 +54,7 @@ public class CommentController {
                         commentService.getCommentsByJoke(jokeId)));
     }
 
-    // Replies to an existing top-level comment.
-    // Replies can only be added to top-level comments — not to other replies.
-    // Both the joke owner and any user can reply to any comment.
+
     @Operation(
             summary = "Reply to a comment",
             description = "Adds a reply to a top-level comment. You cannot reply to a reply. Requires authentication.",
@@ -79,10 +71,6 @@ public class CommentController {
                         commentService.replyToComment(commentId, request, principal.userId())));
     }
 
-    // Deletes a comment or reply permanently.
-    // The comment author can delete their own comment.
-    // The joke owner can delete any comment on their joke.
-    // Deleting a top-level comment also deletes all its replies.
     @Operation(
             summary = "Delete a comment",
             description = "Deletes a comment. The comment author or the joke owner can delete it. Deleting a top-level comment removes all its replies too. Requires authentication.",
@@ -98,9 +86,6 @@ public class CommentController {
                 ApiResponse.success("Comment deleted successfully", null));
     }
 
-    // Toggles a like on a comment.
-    // First call: adds a like and returns updated comment with incremented likes_count.
-    // Second call (same user): removes the like and returns updated comment with decremented count.
     @Operation(
             summary = "Like or unlike a comment",
             description = "Toggles a like on a comment. Call once to like, call again to unlike. Requires authentication.",
