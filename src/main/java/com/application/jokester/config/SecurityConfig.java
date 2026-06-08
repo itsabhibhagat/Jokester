@@ -28,11 +28,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(cors -> {})   // ✅ Enable CORS
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jokes/**").permitAll()
-                        // Reading comments is public — no login needed
                         .requestMatchers(HttpMethod.GET, "/api/jokes/*/comments").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
