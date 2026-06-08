@@ -16,8 +16,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JokeApiProvider implements JokeProvider {
 
-    // Inject WebClient bean directly
-    // Spring injects the same singleton instance every time
     private final WebClient webClient;
 
     @Override
@@ -34,7 +32,6 @@ public class JokeApiProvider implements JokeProvider {
                     .bodyToMono(Map.class)
                     .block();
 
-            // Null-safe - response.get("joke") can be null if API changes
             String joke = (response != null && response.get("joke") != null)
                     ? response.get("joke").toString()
                     : "Could not fetch joke from JokeAPI";
@@ -45,7 +42,6 @@ public class JokeApiProvider implements JokeProvider {
                     .build();
 
         } catch (WebClientResponseException e) {
-            // Handle HTTP 4xx/5xx from external API
             log.error("JokeAPI returned error: {} {}", e.getStatusCode(), e.getMessage());
             return RandomJokeResponse.builder()
                     .joke("JokeAPI is currently unavailable")
@@ -53,7 +49,6 @@ public class JokeApiProvider implements JokeProvider {
                     .build();
 
         } catch (WebClientRequestException e) {
-            // Handle timeout/network failure
             log.error("JokeAPI timed out: {}", e.getMessage());
             return RandomJokeResponse.builder()
                     .joke("JokeAPI timed out, please try again")

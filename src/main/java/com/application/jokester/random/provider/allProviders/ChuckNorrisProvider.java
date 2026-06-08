@@ -16,7 +16,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ChuckNorrisProvider implements JokeProvider {
 
-    // Injecting WebClient bean
     private final WebClient webClient;
 
     @Override
