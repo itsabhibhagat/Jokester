@@ -5,7 +5,11 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -18,9 +22,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Configuration
 @EnableCaching
-public class RedisConfig {
+public class RedisConfig implements CachingConfigurer {
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory factory) {
@@ -50,27 +55,63 @@ public class RedisConfig {
 
         cacheConfigs.put("joke",
                 RedisCacheConfiguration.defaultCacheConfig()
+                        .prefixCacheNameWith("jokester::")
                         .entryTtl(Duration.ofMinutes(10))
                         .disableCachingNullValues()
                         .serializeValuesWith(serializationPair));
 
         cacheConfigs.put("top-jokes",
                 RedisCacheConfiguration.defaultCacheConfig()
+                        .prefixCacheNameWith("jokester::")
                         .entryTtl(Duration.ofMinutes(5))
                         .disableCachingNullValues()
                         .serializeValuesWith(serializationPair));
 
         cacheConfigs.put("random-jokes",
                 RedisCacheConfiguration.defaultCacheConfig()
+                        .prefixCacheNameWith("jokester::")
                         .entryTtl(Duration.ofSeconds(30))
+                        .disableCachingNullValues()
+                        .serializeValuesWith(serializationPair));
+
+        cacheConfigs.put("donations",
+                RedisCacheConfiguration.defaultCacheConfig()
+                        .prefixCacheNameWith("jokester::")
+                        .entryTtl(Duration.ofMinutes(5))
                         .disableCachingNullValues()
                         .serializeValuesWith(serializationPair));
 
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(RedisCacheConfiguration.defaultCacheConfig()
+                        .prefixCacheNameWith("jokester::")
                         .entryTtl(Duration.ofMinutes(10))
                         .serializeValuesWith(serializationPair))
                 .withInitialCacheConfigurations(cacheConfigs)
                 .build();
+    }
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new CacheErrorHandler() {
+            @Override
+            public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
+                log.warn("Redis GET error for key {} in cache {}: {}", key, cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
+                log.warn("Redis PUT error for key {} in cache {}: {}", key, cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
+                log.warn("Redis EVICT error for key {} in cache {}: {}", key, cache.getName(), exception.getMessage());
+            }
+
+            @Override
+            public void handleCacheClearError(RuntimeException exception, Cache cache) {
+                log.warn("Redis CLEAR error for cache {}: {}", cache.getName(), exception.getMessage());
+            }
+        };
     }
 }

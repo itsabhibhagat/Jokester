@@ -16,6 +16,7 @@ import com.application.jokester.joke.service.JokeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class JokeServiceImpl implements JokeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "top-jokes", allEntries = true)
     public JokeResponse createJoke(CreateJokeRequest request, UUID userId) {
         Category category = categoryRepository
                 .findByName(request.getCategoryName().trim())
@@ -105,7 +107,10 @@ public class JokeServiceImpl implements JokeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "joke", key = "#id")
+    @Caching(evict = {
+            @CacheEvict(value = "joke", key = "#id"),
+            @CacheEvict(value = "top-jokes", allEntries = true)
+    })
     public void deleteJoke(UUID id, UUID userId) {
         Joke joke = jokeRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(

@@ -16,7 +16,6 @@ public class RandomJokeService {
 
     private final List<JokeProvider> providers;
 
-    // Single Random instance reused across calls — not created new each time.
     private static final Random RANDOM = new Random();
 
     @Cacheable(value = "random-jokes", key = "#providerName")
@@ -29,7 +28,6 @@ public class RandomJokeService {
                 .fetchJoke();
     }
 
-    @Cacheable(value = "random-jokes", key = "'any-random'")
     public RandomJokeResponse fromRandomProvider() {
         return providers.get(RANDOM.nextInt(providers.size())).fetchJoke();
     }

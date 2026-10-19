@@ -7,7 +7,6 @@ import com.application.jokester.joke.dto.JokePageResponse;
 import com.application.jokester.joke.dto.JokeResponse;
 import com.application.jokester.joke.service.JokeService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

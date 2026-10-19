@@ -15,6 +15,7 @@ import com.application.jokester.exception.UnauthorizedActionException;
 import com.application.jokester.joke.entity.Joke;
 import com.application.jokester.joke.repository.JokeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "joke", key = "#jokeId")
     public CommentResponse addComment(UUID jokeId, CreateCommentRequest request, UUID userId) {
         Joke joke = jokeRepository.findById(jokeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Joke not found: " + jokeId));
@@ -91,6 +93,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "joke", allEntries = true)
     public void deleteComment(UUID commentId, UUID requesterId) {
         Comment comment = commentRepository.findByIdWithJokeOwner(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment not found: " + commentId));

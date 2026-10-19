@@ -14,6 +14,7 @@ import com.application.jokester.vote.service.VoteService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -28,7 +29,10 @@ public class VoteServiceImpl implements VoteService {
     private final UserRepository userRepository;
 
     @Override
-    @CacheEvict(value = "joke", key = "#jokeId", beforeInvocation = true)
+    @Caching(evict = {
+            @CacheEvict(value = "joke", key = "#jokeId", beforeInvocation = true),
+            @CacheEvict(value = "top-jokes", allEntries = true, beforeInvocation = true)
+    })
     public JokeResponse vote(UUID jokeId, VoteType voteType, UUID userId) {
         Joke joke = jokeRepository.findByIdWithDetails(jokeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
